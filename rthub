@@ -1,0 +1,327 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local pGui = player:WaitForChild("PlayerGui")
+
+-- // CONFIGURAÇÕES DA UI
+local COR_ROXA = Color3.fromRGB(110, 0, 255) 
+local COR_FUNDO = Color3.fromRGB(20, 20, 25)
+local COR_FUNDO_CLARO = Color3.fromRGB(30, 30, 35)
+local SENHA_CORRETA = "9921"
+local GUI_NAME = "RT_Team_Premium"
+
+-- // LIMPEZA (Evita duplicar a GUI ao executar de novo)
+for _, old in pairs(pGui:GetChildren()) do
+    if old.Name == GUI_NAME then old:Destroy() end
+end
+
+-- // FUNÇÕES DE ANIMAÇÃO E ESTILO
+local function aplicarEstilo(obj, radius)
+    local ui = Instance.new("UICorner")
+    ui.CornerRadius = UDim.new(0, radius or 8)
+    ui.Parent = obj
+end
+
+local function adicionarBorda(obj, color, thickness)
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = color
+    stroke.Thickness = thickness or 1
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Parent = obj
+end
+
+local function animar(obj, prop, duration)
+    local tweenInfo = TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(obj, tweenInfo, prop)
+    tween:Play()
+    return tween
+end
+
+local function animarBotao(btn, corOriginal, corHover)
+    btn.MouseEnter:Connect(function() animar(btn, {BackgroundColor3 = corHover}) end)
+    btn.MouseLeave:Connect(function() animar(btn, {BackgroundColor3 = corOriginal}) end)
+end
+
+-- Sistema de Arrastar Suave
+local function tornarArrastavel(frame, areaDeArraste)
+    local dragging, dragInput, mousePos, framePos
+
+    areaDeArraste.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            mousePos = input.Position
+            framePos = frame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+
+    areaDeArraste.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - mousePos
+            animar(frame, {Position = UDim2.new(framePos.X.Scale, framePos.X.Offset + delta.X, framePos.Y.Scale, framePos.Y.Offset + delta.Y)}, 0.1)
+        end
+    end)
+end
+
+-- // CRIAÇÃO DA INTERFACE
+local screenGui = Instance.new("ScreenGui", pGui)
+screenGui.Name = GUI_NAME
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+
+-- Botão Toggle (Abre/Fecha)
+local toggleBtn = Instance.new("TextButton", screenGui)
+toggleBtn.Size = UDim2.new(0, 45, 0, 45)
+toggleBtn.Position = UDim2.new(0, 20, 0.5, -22)
+toggleBtn.Text = "RT"
+toggleBtn.BackgroundColor3 = COR_FUNDO
+toggleBtn.TextColor3 = COR_ROXA
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextSize = 20
+toggleBtn.AutoButtonColor = false
+aplicarEstilo(toggleBtn, 10)
+adicionarBorda(toggleBtn, COR_ROXA, 2)
+tornarArrastavel(toggleBtn, toggleBtn)
+animarBotao(toggleBtn, COR_FUNDO, COR_FUNDO_CLARO)
+
+-- Frame Principal
+local mainFrame = Instance.new("Frame", screenGui)
+mainFrame.Size = UDim2.new(0, 340, 0, 240)
+mainFrame.Position = UDim2.new(0.5, -170, 0.5, -120)
+mainFrame.BackgroundColor3 = COR_FUNDO
+mainFrame.ClipsDescendants = true
+mainFrame.Visible = false
+aplicarEstilo(mainFrame, 10)
+adicionarBorda(mainFrame, COR_ROXA, 1)
+
+-- Header (Área de Arraste)
+local header = Instance.new("Frame", mainFrame)
+header.Size = UDim2.new(1, 0, 0, 40)
+header.BackgroundColor3 = COR_FUNDO_CLARO
+header.BorderSizePixel = 0
+aplicarEstilo(header, 10)
+tornarArrastavel(mainFrame, header) -- Arrastar pelo header é muito melhor
+
+-- Consertar o canto inferior do header para juntar com o corpo
+local headerFix = Instance.new("Frame", header)
+headerFix.Size = UDim2.new(1, 0, 0, 10)
+headerFix.Position = UDim2.new(0, 0, 1, -10)
+headerFix.BackgroundColor3 = COR_FUNDO_CLARO
+headerFix.BorderSizePixel = 0
+
+local title = Instance.new("TextLabel", header)
+title.Size = UDim2.new(1, -50, 1, 0)
+title.Position = UDim2.new(0, 15, 0, 0)
+title.Text = "RT TEAM PREMIUM"
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.TextSize = 14
+title.BackgroundTransparency = 1
+
+local btnConfig = Instance.new("TextButton", header)
+btnConfig.Size = UDim2.new(0, 30, 0, 30)
+btnConfig.Position = UDim2.new(1, -35, 0.5, -15)
+btnConfig.Text = "⚙"
+btnConfig.BackgroundColor3 = COR_FUNDO
+btnConfig.TextColor3 = Color3.new(1,1,1)
+btnConfig.Font = Enum.Font.GothamBold
+btnConfig.TextSize = 18
+aplicarEstilo(btnConfig, 6)
+animarBotao(btnConfig, COR_FUNDO, COR_ROXA)
+
+-- Recipiente das Abas (Tab System)
+local contentContainer = Instance.new("Frame", mainFrame)
+contentContainer.Size = UDim2.new(2, 0, 1, -40) -- O dobro da largura para caber as duas abas
+contentContainer.Position = UDim2.new(0, 0, 0, 40)
+contentContainer.BackgroundTransparency = 1
+
+-- ABA 1: TELA PRINCIPAL
+local tabPrincipal = Instance.new("Frame", contentContainer)
+tabPrincipal.Size = UDim2.new(0.5, 0, 1, 0)
+tabPrincipal.Position = UDim2.new(0, 0, 0, 0)
+tabPrincipal.BackgroundTransparency = 1
+
+local passBox = Instance.new("TextBox", tabPrincipal)
+passBox.Size = UDim2.new(0, 260, 0, 40)
+passBox.Position = UDim2.new(0.5, -130, 0.5, -50)
+passBox.PlaceholderText = "Digite a Senha..."
+passBox.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+passBox.TextColor3 = Color3.new(1,1,1)
+passBox.Font = Enum.Font.Gotham
+passBox.TextSize = 14
+passBox.ClearTextOnFocus = false
+aplicarEstilo(passBox, 6)
+adicionarBorda(passBox, Color3.fromRGB(50, 50, 60), 1)
+
+local btnAtivar = Instance.new("TextButton", tabPrincipal)
+btnAtivar.Size = UDim2.new(0, 260, 0, 45)
+btnAtivar.Position = UDim2.new(0.5, -130, 0.5, 10)
+btnAtivar.Text = "ATIVAR SCRIPT"
+btnAtivar.BackgroundColor3 = COR_ROXA
+btnAtivar.TextColor3 = Color3.new(1,1,1)
+btnAtivar.Font = Enum.Font.GothamBold
+btnAtivar.TextSize = 16
+btnAtivar.AutoButtonColor = false
+aplicarEstilo(btnAtivar, 6)
+animarBotao(btnAtivar, COR_ROXA, Color3.fromRGB(130, 40, 255))
+
+-- ABA 2: CONFIGURAÇÕES
+local tabConfig = Instance.new("Frame", contentContainer)
+tabConfig.Size = UDim2.new(0.5, 0, 1, 0)
+tabConfig.Position = UDim2.new(0.5, 0, 0, 0)
+tabConfig.BackgroundTransparency = 1
+
+local configTitle = Instance.new("TextLabel", tabConfig)
+configTitle.Size = UDim2.new(1, 0, 0, 30)
+configTitle.Position = UDim2.new(0, 0, 0, 15)
+configTitle.Text = "INFORMAÇÕES"
+configTitle.TextColor3 = Color3.new(1,1,1)
+configTitle.Font = Enum.Font.GothamBold
+configTitle.TextSize = 16
+configTitle.BackgroundTransparency = 1
+
+local sh = Instance.new("TextLabel", tabConfig)
+sh.Size = UDim2.new(1, 0, 0, 20)
+sh.Position = UDim2.new(0, 0, 0, 55)
+sh.Text = "Atalhos: [V] Abrir Menu | [E] Ativar/Executar"
+sh.TextColor3 = Color3.fromRGB(200, 200, 200)
+sh.Font = Enum.Font.Gotham
+sh.TextSize = 13
+sh.BackgroundTransparency = 1
+
+local cr = Instance.new("TextLabel", tabConfig)
+cr.Size = UDim2.new(1, 0, 0, 20)
+cr.Position = UDim2.new(0, 0, 0, 85)
+cr.Text = "Criadores: nao_podenamorar, GL e GGDEV"
+cr.TextColor3 = Color3.fromRGB(150, 100, 255)
+cr.Font = Enum.Font.Gotham
+cr.TextSize = 12
+cr.BackgroundTransparency = 1
+
+local btnVoltar = Instance.new("TextButton", tabConfig)
+btnVoltar.Size = UDim2.new(0, 140, 0, 35)
+btnVoltar.Position = UDim2.new(0.5, -70, 1, -55)
+btnVoltar.Text = "VOLTAR"
+btnVoltar.BackgroundColor3 = COR_FUNDO_CLARO
+btnVoltar.TextColor3 = Color3.new(1,1,1)
+btnVoltar.Font = Enum.Font.GothamBold
+btnVoltar.TextSize = 14
+btnVoltar.AutoButtonColor = false
+aplicarEstilo(btnVoltar, 6)
+animarBotao(btnVoltar, COR_FUNDO_CLARO, Color3.fromRGB(50, 50, 60))
+
+-- // LÓGICA DO SISTEMA
+local menuAberto = false
+local configAberta = false
+local senhaValidada = false
+
+-- Função para abrir/fechar o menu inteiro com animação
+local function alternarMenu()
+    menuAberto = not menuAberto
+    if menuAberto then
+        mainFrame.Size = UDim2.new(0, 340, 0, 0)
+        mainFrame.Visible = true
+        animar(mainFrame, {Size = UDim2.new(0, 340, 0, 240)}, 0.3)
+    else
+        local fechar = animar(mainFrame, {Size = UDim2.new(0, 340, 0, 0)}, 0.3)
+        fechar.Completed:Connect(function()
+            if not menuAberto then mainFrame.Visible = false end
+        end)
+    end
+end
+
+-- Função para deslizar entre Principal e Configurações
+local function alternarConfig()
+    configAberta = not configAberta
+    if configAberta then
+        animar(contentContainer, {Position = UDim2.new(-1, 0, 0, 40)}, 0.3)
+        btnConfig.TextColor3 = COR_ROXA
+    else
+        animar(contentContainer, {Position = UDim2.new(0, 0, 0, 40)}, 0.3)
+        btnConfig.TextColor3 = Color3.new(1,1,1)
+    end
+end
+
+local function executarHack()
+    local rem = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("UpdateProgress")
+    if rem then rem:FireServer(100000000000000) end
+end
+
+local function acaoAtivar()
+    passBox:ReleaseFocus()
+    
+    if not senhaValidada then
+        if passBox.Text == SENHA_CORRETA then
+            senhaValidada = true
+            
+            -- Animação de sucesso
+            animar(passBox, {BackgroundTransparency = 1, TextTransparency = 1}, 0.3)
+            task.wait(0.3)
+            passBox.Visible = false
+            
+            animar(btnAtivar, {Position = UDim2.new(0.5, -130, 0.5, -22), BackgroundColor3 = Color3.fromRGB(40, 180, 40)}, 0.3)
+            btnAtivar.Text = "✔ AUTENTICADO"
+            executarHack()
+            
+            task.wait(1.5)
+            btnAtivar.Text = "EXECUTAR NOVAMENTE"
+            animar(btnAtivar, {BackgroundColor3 = COR_ROXA}, 0.3)
+            animarBotao(btnAtivar, COR_ROXA, Color3.fromRGB(130, 40, 255)) -- Reseta o hover
+        else
+            -- Animação de erro (Tremer a caixa de senha)
+            btnAtivar.Text = "❌ SENHA INCORRETA"
+            btnAtivar.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+            
+            local posOriginal = passBox.Position
+            for i = 1, 4 do
+                passBox.Position = posOriginal + UDim2.new(0, math.random(-5, 5), 0, 0)
+                task.wait(0.05)
+            end
+            passBox.Position = posOriginal
+            
+            task.wait(1)
+            btnAtivar.Text = "ATIVAR SCRIPT"
+            btnAtivar.BackgroundColor3 = COR_ROXA
+        end
+    else
+        -- Se a senha já foi validada, apenas executa
+        btnAtivar.Text = "EXECUTANDO..."
+        executarHack()
+        task.wait(0.5)
+        btnAtivar.Text = "EXECUTAR NOVAMENTE"
+    end
+end
+
+-- // EVENTOS DE CLIQUE
+toggleBtn.MouseButton1Click:Connect(alternarMenu)
+btnConfig.MouseButton1Click:Connect(alternarConfig)
+btnVoltar.MouseButton1Click:Connect(alternarConfig)
+btnAtivar.MouseButton1Click:Connect(acaoAtivar)
+
+-- // EVENTOS DE TECLADO (Corrigido para não ativar no chat)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    -- O 'gameProcessed' ignora se o jogador estiver digitando no Chat ou em uma Textbox
+    if gameProcessed then return end 
+
+    if input.KeyCode == Enum.KeyCode.V then
+        alternarMenu()
+    elseif input.KeyCode == Enum.KeyCode.E then
+        -- O E só funciona se o menu estiver aberto e a aba de config estiver fechada
+        if menuAberto and not configAberta then
+            acaoAtivar()
+        end
+    end
+end)
